@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>InsightGlass – See through your data</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Real data support (CSV/Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header><h1>InsightGlass</h1></header>
+
+  <main>
+    <section>
+      <input id="file" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json" />
+      <button id="analyzeBtn" disabled>Analyze</button>
+      <label style="margin-left:8px;">
+        <input id="sampleChk" type="checkbox" checked /> Sample large files (recommended)
+      </label>
+      <p id="status"></p>
+      <button id="testBtn" style="margin-top:8px;">Run AI Test</button>
+    </section>
+
+    <section>
+      <h2>Dataset profile</h2>
+      <pre id="profile"></pre>
+    </section>
+
+    <section>
+      <h2>AI Insights</h2>
+      <pre id="insights"></pre>
+    </section>
+
+    <section>
+      <h2>Executive Summary</h2>
+      <pre id="summary"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
