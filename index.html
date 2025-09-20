@@ -8,7 +8,8 @@
   <!-- Real data support (CSV/Excel) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js.4.1/dist/chart.umd.min.js"></script>
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header><h1>InsightGlass</h1></header>
@@ -37,17 +38,32 @@
     <section>
       <h2>Executive Summary</h2>
       <pre id="summary"></pre>
+
+      <!-- 🔤 Proofread + 🌐 Translate controls -->
+      <div style="margin:10px 0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button id="proofBtn" title="Polish grammar and tone">Proofread</button>
+
+        <label for="langSelect" style="font-weight:600;">Translate to:</label>
+        <select id="langSelect">
+          <option value="fr">French (fr)</option>
+          <option value="ar">Arabic (ar)</option>
+          <option value="es">Spanish (es)</option>
+          <option value="de">German (de)</option>
+        </select>
+        <button id="translateBtn" title="Translate summary to selected language">Translate</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Data quality</h2>
+      <canvas id="missingChart" height="120"></canvas>
+    </section>
+
+    <section>
+      <h2>Distribution (top numeric column)</h2>
+      <canvas id="distChart" height="120"></canvas>
     </section>
   </main>
-  <section>
-    <h2>Data quality</h2>
-    <canvas id="missingChart" height="120"></canvas>
-  </section>
-
-  <section>
-    <h2>Distribution (top numeric column)</h2>
-    <canvas id="distChart" height="120"></canvas>
-  </section>
 
   <script type="module" src="src/app.js"></script>
 </body>
