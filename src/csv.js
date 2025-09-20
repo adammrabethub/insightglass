@@ -1,5 +1,5 @@
-// Reads CSV/TSV via PapaParse (streaming), Excel via SheetJS, JSON array.
-// Returns array of row objects. Provides a simple profiler.
+// Reads CSV/TSV via PapaParse, Excel via SheetJS, JSON array.
+// Profiling now includes std dev; adds histogram + anomaly summary utilities.
 
 export async function loadFile(file, { sample = true, sampleRows = 50000 } = {}) {
   const ext = file.name.toLowerCase().split('.').pop();
@@ -56,15 +56,66 @@ export function profileRows(rows) {
       if (!Number.isNaN(num) && Number.isFinite(num)) nums.push(num);
     }
     const numeric = nums.length >= 0.7 * vals.length && nums.length > 0;
-    const min = numeric ? Math.min(...nums) : null;
-    const max = numeric ? Math.max(...nums) : null;
-    const mean = numeric ? nums.reduce((a,b)=>a+b,0) / nums.length : null;
+    let min = null, max = null, mean = null, std = null;
+    if (numeric) {
+      min = Math.min(...nums);
+      max = Math.max(...nums);
+      mean = nums.reduce((a,b)=>a+b,0) / nums.length;
+      const variance = nums.reduce((a,b)=>a + (b-mean)*(b-mean), 0) / Math.max(1, (nums.length-1));
+      std = Math.sqrt(variance);
+    }
     stats[col] = {
       nonNull: vals.length,
       missing: n - vals.length,
       unique: new Set(vals.map(v => String(v))).size,
-      numeric, min, max, mean
+      numeric, min, max, mean, std
     };
   }
   return { rows: n, columns, stats, preview: rows.slice(0, 5) };
+}
+
+// Simple histogram for one numeric column
+export function histogramForColumn(rows, col, bins = 20) {
+  const nums = rows.map(r => Number(r[col])).filter(v => Number.isFinite(v));
+  if (!nums.length) return { labels: [], counts: [] };
+  const min = Math.min(...nums), max = Math.max(...nums);
+  const width = (max - min) / (bins || 1) || 1;
+  const counts = new Array(bins).fill(0);
+  for (const v of nums) {
+    let idx = Math.floor((v - min) / width);
+    if (idx >= bins) idx = bins - 1;
+    if (idx < 0) idx = 0;
+    counts[idx]++;
+  }
+  const labels = counts.map((_, i) => {
+    const a = min + i*width;
+    const b = i === bins-1 ? max : (a + width);
+    return `${round(a)}–${round(b)}`;
+  });
+  return { labels, counts };
+
+  function round(x) {
+    if (Math.abs(x) >= 1000) return Math.round(x);
+    return Math.round(x * 100) / 100;
+  }
+}
+
+// Basic anomaly summary by z-score (>3σ)
+export function anomalySummary(rows, profile) {
+  const out = [];
+  for (const [col, s] of Object.entries(profile.stats)) {
+    if (!s.numeric || s.std == null || s.std === 0) continue;
+    const mean = s.mean, std = s.std;
+    let count = 0;
+    for (const r of rows) {
+      const v = Number(r[col]);
+      if (!Number.isFinite(v)) continue;
+      const z = (v - mean) / std;
+      if (Math.abs(z) > 3) count++;
+    }
+    if (count > 0) out.push({ column: col, outliers: count });
+  }
+  // sort descending
+  out.sort((a,b)=>b.outliers - a.outliers);
+  return out;
 }

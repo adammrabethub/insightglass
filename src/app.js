@@ -1,5 +1,6 @@
 import { testPromptAPI, getInsightsFromStats, getSummaryFromText } from './ai.js';
-import { loadFile, profileRows } from './csv.js';
+import { loadFile, profileRows, histogramForColumn, anomalySummary } from './csv.js';
+import { renderMissingnessChart, renderDistributionChart } from './ui.js';
 
 const fileInput = document.getElementById('file');
 const sampleChk = document.getElementById('sampleChk');
@@ -42,9 +43,31 @@ analyzeBtn.addEventListener('click', async () => {
     const prof = profileRows(loadedRows);
     profileEl.textContent = JSON.stringify(prof, null, 2);
 
+    // Charts: missingness
+    const missLabels = Object.keys(prof.stats);
+    const missValues = missLabels.map(c => prof.stats[c].missing || 0);
+    renderMissingnessChart('missingChart', missLabels, missValues);
+
+    // Distribution chart: pick top numeric column (most unique)
+    const numericCols = missLabels.filter(c => prof.stats[c].numeric);
+    if (numericCols.length) {
+      const top = numericCols.sort((a,b)=> (prof.stats[b].unique||0) - (prof.stats[a].unique||0))[0];
+      const { labels, counts } = histogramForColumn(loadedRows, top, 20);
+      renderDistributionChart('distChart', labels, counts);
+    }
+
+    // Anomaly summary
+    const anomalies = anomalySummary(loadedRows, prof);
+    if (anomalies.length) {
+      const txt = anomalies.slice(0,5).map(a => `• ${a.column}: ${a.outliers} outliers (>3σ)`).join('\\n');
+      insightsEl.textContent = `Anomaly summary (pre-AI):\\n${txt}\\n\\n`;
+    } else {
+      insightsEl.textContent = 'Anomaly summary (pre-AI): none detected\\n\\n';
+    }
+
     statusEl.textContent = 'Generating insights (Prompt API)…';
     const insights = await getInsightsFromStats(prof);
-    insightsEl.textContent = insights;
+    insightsEl.textContent += insights;
 
     statusEl.textContent = 'Summarizing (Summarizer API)…';
     const summary = await getSummaryFromText(
